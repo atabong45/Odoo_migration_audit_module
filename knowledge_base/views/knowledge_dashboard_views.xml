@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vue Graphique (inchangée) -->
+    <record id="knowledge_article_view_graph" model="ir.ui.view">
+        <field name="name">knowledge.article.graph</field>
+        <field name="model">knowledge.article</field>
+        <field name="arch" type="xml">
+            <graph string="Analyse des Articles" type="bar">
+                <field name="category_id" type="row"/>
+                <field name="state" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Vue Pivot (inchangée) -->
+    <record id="knowledge_article_view_pivot" model="ir.ui.view">
+        <field name="name">knowledge.article.pivot</field>
+        <field name="model">knowledge.article</field>
+        <field name="arch" type="xml">
+            <pivot string="Analyse des Articles">
+                <field name="category_id" type="row"/>
+                <field name="author_id" type="col"/>
+                <field name="average_rating" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- L'action qui ouvre les vues analytiques (Version Simplifiée) -->
+    <record id="knowledge_dashboard_action" model="ir.actions.act_window">
+        <field name="name">Analyse des Articles</field>
+        <field name="res_model">knowledge.article</field>
+        <!-- On ouvre le graphique en premier, et on permet de basculer vers pivot et liste -->
+        <field name="view_mode">graph,pivot,tree</field>
+        <!-- On lie notre vue de recherche -->
+        <field name="search_view_id" ref="knowledge_article_view_search"/>
+        <!-- Contexte pour filtrer par défaut -->
+        <field name="context">{'search_default_group_by_category': 1, 'search_default_filter_published': 1}</field>
+    </record>
+
+    <!-- L'entrée de menu pour le dashboard (renommée pour plus de clarté) -->
+    <menuitem 
+        id="knowledge_dashboard_menu"
+        name="Analyse"
+        parent="knowledge_base_menu_root"
+        action="knowledge_dashboard_action"
+        sequence="50"/>
+
+</odoo>

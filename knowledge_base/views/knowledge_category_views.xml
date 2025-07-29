@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vue Liste (Tree) pour les Catégories -->
+    <record id="knowledge_category_view_tree" model="ir.ui.view">
+        <field name="name">knowledge.category.tree</field>
+        <field name="model">knowledge.category</field>
+        <field name="arch" type="xml">
+            <tree string="Catégories">
+                <field name="name"/>
+                <field name="parent_id"/>
+                <field name="article_count" string="Nb Articles"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Formulaire (Form) pour les Catégories -->
+    <record id="knowledge_category_view_form" model="ir.ui.view">
+        <field name="name">knowledge.category.form</field>
+        <field name="model">knowledge.category</field>
+        <field name="arch" type="xml">
+            <form string="Catégorie">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="parent_id"/>
+                        <field name="description" placeholder="Ajoutez une courte description de la catégorie..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action de Fenêtre pour les Catégories -->
+    <record id="knowledge_category_action" model="ir.actions.act_window">
+        <field name="name">Catégories</field>
+        <field name="res_model">knowledge.category</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créez votre première catégorie pour organiser vos articles.
+            </p>
+        </field>
+    </record>
+
+    <!-- Ajout de l'entrée de menu pour les Catégories dans le menu Configuration -->
+    <menuitem 
+        id="knowledge_category_menu"
+        name="Catégories"
+        parent="knowledge_config_menu"
+        action="knowledge_category_action"
+        sequence="10"/>
+
+</odoo>

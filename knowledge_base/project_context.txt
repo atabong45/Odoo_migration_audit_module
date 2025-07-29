@@ -1,0 +1,864 @@
+Project Context From: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base
+Generated On: lun. 28 juil. 2025 18:14:28 CEST
+===============================================
+Ignored Directory Patterns: .* node_modules vendor build dist target __pycache__ .next cache target venv storage
+Ignored File Patterns: *.log *.jar *.pdf *.png *.jpg *.class *.sqlite *.csv project_context.txt package-lock.json yarn.lock composer.lock *.ico pnpm-lock.yaml
+===============================================
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/data/knowledge_base.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1"> 
+        
+        <!-- On crée une catégorie de sécurité pour bien ranger nos groupes dans l'interface -->
+        <record id="module_category_knowledge_base" model="ir.module.category">
+            <field name="name">Base de Connaissances</field>
+            <field name="description">Droits d'accès pour l'application Base de Connaissances</field>
+        </record>
+
+        <!-- Groupe 1 : Le Lecteur (Utilisateur) -->
+        <!-- Tout le monde dans ce groupe peut lire les articles. -->
+        <record id="group_knowledge_base_user" model="res.groups">
+            <field name="name">Utilisateur</field>
+            <field name="category_id" ref="module_category_knowledge_base"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/> <!-- Ce groupe inclut tous les employés connectés par défaut -->
+        </record>
+
+        <!-- Groupe 2 : Le Contributeur -->
+        <!-- Les membres de ce groupe peuvent créer et modifier des articles. -->
+        <record id="group_knowledge_base_contributor" model="res.groups">
+            <field name="name">Contributeur</field>
+            <field name="category_id" ref="module_category_knowledge_base"/>
+            <field name="implied_ids" eval="[(4, ref('group_knowledge_base_user'))]"/> <!-- Un contributeur est aussi un utilisateur (il hérite des droits) -->
+        </record>
+
+    </data>
+</odoo>// END OF FILE: data/knowledge_base.xml
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/__init__.py
+
+# -*- coding: utf-8 -*-
+from . import models// END OF FILE: __init__.py
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/__manifest__.py
+
+# -*- coding: utf-8 -*-
+{
+    'name': "Base de Connaissances (Wiki Interne)", 
+    'version': '14.0.1.0.0',
+    'summary': """
+        Centralisez et partagez la connaissance de votre entreprise.
+    """,
+    'description': """
+        Ce module fournit une application de type Wiki pour créer, organiser et 
+        rechercher des articles et procédures internes.
+    """,
+    'author': "ATABONG EFON STEPHANE FRITZ", 
+    'sequence': 1,
+    'web_icon': 'knowledge_base/static/description/icon.svg',
+    'website': "https:atabong-portfolio.vercel.app", 
+    'category': 'Knowledge Management',
+    'depends': [
+        'base',      
+        'mail',      
+        'hr',        
+    ],
+    'data': [       
+        'data/knowledge_base.xml',
+        'security/ir.model.access.csv',
+        'views/knowledge_article_views.xml',
+        'views/knowledge_category_views.xml',
+        'views/knowledge_tag_views.xml',
+        'views/knowledge_dashboard_views.xml',
+        'views/knowledge_menus.xml',
+    ],
+    'installable': True,
+    'application': True, 
+    'auto_install': False,
+    'license': 'LGPL-3',
+}// END OF FILE: __manifest__.py
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/models/article_rating_wizard.py
+
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+
+class ArticleRatingWizard(models.TransientModel):
+    _name = 'knowledge.article.rating.wizard'
+    _description = 'Assistant de Notation d\'Article'
+
+    # Le champ que l'utilisateur va remplir
+    rating = fields.Selection([
+        ('1', '⭐ Très mauvais'),
+        ('2', '⭐⭐ Mauvais'),
+        ('3', '⭐⭐⭐ Moyen'),
+        ('4', '⭐⭐⭐⭐ Bon'),
+        ('5', '⭐⭐⭐⭐⭐ Excellent')
+    ], string="Votre Note", required=True, default='4') # default à 4 pour encourager
+    
+    feedback = fields.Text(string="Votre commentaire (optionnel)")
+    
+    # Un champ pour garder en mémoire l'article que l'on est en train de noter
+    article_id = fields.Many2one('knowledge.article', string="Article", readonly=True)
+
+    def action_submit_rating(self):
+        """
+        Cette méthode est appelée quand l'utilisateur clique sur "Soumettre".
+        """
+        self.ensure_one() # S'assure qu'on travaille sur un seul wizard à la fois
+
+        # On vérifie si l'utilisateur n'a pas déjà noté
+        existing_rating = self.env['knowledge.article.rating'].search([
+            ('article_id', '=', self.article_id.id),
+            ('user_id', '=', self.env.user.id)
+        ], limit=1)
+
+        if existing_rating:
+            # Si une note existe déjà, on la met simplement à jour
+            existing_rating.write({
+                'rating': self.rating,
+                'feedback': self.feedback
+            })
+        else:
+            # Sinon, on crée une nouvelle note
+            self.env['knowledge.article.rating'].create({
+                'article_id': self.article_id.id,
+                'user_id': self.env.user.id,
+                'rating': self.rating,
+                'feedback': self.feedback,
+            })
+        
+        # On retourne une action pour fermer le wizard
+        return {'type': 'ir.actions.act_window_close'}// END OF FILE: models/article_rating_wizard.py
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/models/__init__.py
+
+# -*- coding: utf-8 -*-
+from . import knowledge_category
+from . import knowledge_tag
+from . import knowledge_article
+from . import knowledge_article_rating
+from . import article_rating_wizard// END OF FILE: models/__init__.py
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/models/knowledge_article.py
+
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+
+class KnowledgeArticle(models.Model):
+    _name = 'knowledge.article'
+    _inherit = ['mail.thread', 'mail.activity.mixin'] 
+    _description = 'Article de la Base de Connaissances'
+    _order = 'name'
+
+    name = fields.Char(string="Titre", required=True, tracking=True)
+    active = fields.Boolean(string="Actif", default=True)
+    state = fields.Selection([
+        ('draft', 'Brouillon'),
+        ('published', 'Publié')
+    ], string="État", default='draft', required=True, tracking=True)
+    
+    content = fields.Html(string="Contenu")
+    
+    # --- Relations ---
+    category_id = fields.Many2one(
+        'knowledge.category', 
+        string="Catégorie", 
+        required=True, 
+        ondelete='restrict'
+    )
+    tag_ids = fields.Many2many(
+        'knowledge.tag', 
+        string="Mots-clés"
+    )
+    author_id = fields.Many2one(
+        'res.users', 
+        string="Auteur", 
+        readonly=True, 
+        default=lambda self: self.env.user
+    )
+    
+    # --- Rating ---
+    rating_ids = fields.One2many(
+        'knowledge.article.rating', 
+        'article_id', 
+        string="Notes"
+    )
+    average_rating = fields.Float(
+        string="Note Moyenne", 
+        compute='_compute_average_rating', 
+        store=True, 
+        digits=(3, 2)
+    )
+    
+    view_count = fields.Integer(string="Nombre de Vues", default=0, readonly=True)
+    color = fields.Integer(string='Index Couleur')
+
+    @api.depends('rating_ids.rating')
+    def _compute_average_rating(self):
+        for article in self:
+            if article.rating_ids:
+                # On convertit les notes en entiers pour le calcul
+                ratings = [int(r.rating) for r in article.rating_ids]
+                article.average_rating = sum(ratings) / len(ratings)
+            else:
+                article.average_rating = 0.0
+
+    # Méthodes pour les boutons 
+    def action_publish(self):
+        self.write({'state': 'published'})
+
+    def action_set_to_draft(self):
+        self.write({'state': 'draft'})
+
+    def action_open_rating_wizard(self):
+        """
+        Ouvre l'assistant de notation pour l'article courant.
+        """
+        self.ensure_one()
+        # Crée un wizard pré-rempli avec l'ID de l'article courant
+        wizard = self.env['knowledge.article.rating.wizard'].create({
+            'article_id': self.id,
+        })
+        
+        # Retourne une action qui ouvre la vue du wizard en mode formulaire
+        return {
+            'name': 'Noter cet article',
+            'type': 'ir.actions.act_window',
+            'res_model': 'knowledge.article.rating.wizard',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new', # 'new' signifie que ça s'ouvre en pop-up
+        }
+    
+    def read(self, fields=None, load='_classic_read'):
+        """ Surcharge la méthode read pour incrémenter le compteur de vues. """
+        # On appelle d'abord la méthode parente pour obtenir le comportement normal
+        result = super(KnowledgeArticle, self).read(fields=fields, load=load)
+        
+        # On incrémente le compteur uniquement si on lit un seul enregistrement (typiquement, en ouvrant la vue formulaire)
+        # et pour éviter de le faire sur des opérations de recherche en arrière-plan.
+        if len(self) == 1 and not self.env.context.get('skip_view_count'):
+            # On utilise une requête SQL directe pour la performance et pour éviter des boucles de récursion.
+            # Cela met à jour le compteur sans déclencher d'autres écritures ou calculs.
+            self.env.cr.execute('UPDATE knowledge_article SET view_count = view_count + 1 WHERE id = %s', [self.id])
+            self.env.cr.commit() # On commit directement pour que le compte soit instantané
+            
+        return result// END OF FILE: models/knowledge_article.py
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/models/knowledge_article_rating.py
+
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+
+class KnowledgeArticleRating(models.Model):
+    _name = 'knowledge.article.rating'
+    _description = 'Note d\'un Article de la Base de Connaissances'
+    _order = 'create_date desc'
+
+    article_id = fields.Many2one(
+        'knowledge.article', 
+        string="Article", 
+        required=True, 
+        ondelete='cascade'
+    )
+    user_id = fields.Many2one(
+        'res.users', 
+        string="Utilisateur", 
+        required=True, 
+        default=lambda self: self.env.user
+    )
+    rating = fields.Selection([
+        ('1', '⭐'),
+        ('2', '⭐⭐'),
+        ('3', '⭐⭐⭐'),
+        ('4', '⭐⭐⭐⭐'),
+        ('5', '⭐⭐⭐⭐⭐')
+    ], string="Note", required=True)
+    feedback = fields.Text(string="Commentaire (Optionnel)")
+
+    # Contrainte pour s'assurer qu'un utilisateur ne note qu'une seule fois un article
+    _sql_constraints = [
+        ('unique_article_user_rating', 'unique(article_id, user_id)', 
+         'Vous avez déjà noté cet article !')
+    ]// END OF FILE: models/knowledge_article_rating.py
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/models/knowledge_category.py
+
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api
+
+class KnowledgeCategory(models.Model):
+    _name = 'knowledge.category'
+    _description = 'Catégorie de la Base de Connaissances'
+    _order = 'name'
+
+    name = fields.Char(string="Nom de la Catégorie", required=True)
+    description = fields.Text(string="Description")
+    
+    # --- Champs pour la hiérarchie ---
+    parent_id = fields.Many2one(
+        'knowledge.category', 
+        string="Catégorie Parente", 
+        ondelete='cascade', 
+        index=True
+    )
+    child_ids = fields.One2many(
+        'knowledge.category', 
+        'parent_id', 
+        string="Sous-catégories"
+    )
+
+    # --- Champ calculé pour le nombre d'articles ---
+    article_count = fields.Integer(
+        string="Nombre d'Articles", 
+        compute='_compute_article_count'
+    )
+
+    def _compute_article_count(self):
+        for category in self:
+            count = self.env['knowledge.article'].search_count([
+                ('category_id', 'child_of', category.id)
+            ])
+            category.article_count = count// END OF FILE: models/knowledge_category.py
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/models/knowledge_tag.py
+
+# -*- coding: utf-8 -*-
+from odoo import models, fields
+
+class KnowledgeTag(models.Model):
+    _name = 'knowledge.tag'
+    _description = 'Mot-clé (Tag) de la Base de Connaissances'
+    _order = 'name'
+
+    name = fields.Char(string="Nom du Tag", required=True)
+    color = fields.Integer(string="Couleur") // END OF FILE: models/knowledge_tag.py
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/prompter.sh
+
+#!/bin/bash
+
+# --- Configuration ---
+
+# Default project path if none provided
+DEFAULT_PROJECT_PATH="."
+PROJECT_PATH=${1:-"$DEFAULT_PROJECT_PATH"}
+
+# Output file name (relative to PROJECT_PATH)
+OUTPUT_FILENAME="project_context.txt"
+
+# Directories to completely ignore (won't be traversed)
+EXCLUDE_DIRS_PATTERN=( \
+    ".*"            # All hidden folders (.git, .vscode, .idea, .svn, etc.)
+    "node_modules"
+    "vendor"        # PHP Composer
+    "build"
+    "dist"
+    "target"        # Java/Rust build outputs
+    "__pycache__"   # Python cache
+    ".next"         # Next.js build output
+    "cache"         # General cache folders
+    "target"
+    "venv"
+    "storage"       # Laravel storage (often contains logs, cache, etc.)
+    # Add more directory names here if needed
+)
+
+# Specific file patterns to ignore within traversed directories
+EXCLUDE_FILES_PATTERN=( \
+    "*.log"
+    "*.jar"
+    "*.pdf"
+    "*.png"
+    "*.jpg"
+    "*.class"
+    "*.sqlite"
+    "*.csv"
+    "project_context.txt"
+    # ".env*"       # Consider if you NEED .env files; uncomment if NOT needed.
+    "package-lock.json"
+    "yarn.lock"
+    "composer.lock"
+    "*.ico"
+    "pnpm-lock.yaml"
+    # Add more file patterns here (e.g., "*.swp", "*.bak", "*.tmp")
+)
+
+# --- Script Logic ---
+
+# Attempt to get absolute path; exit if PROJECT_PATH is invalid early
+PROJECT_PATH=$(realpath "$PROJECT_PATH" 2>/dev/null)
+if [ $? -ne 0 ] || [ ! -d "$PROJECT_PATH" ]; then
+    echo "Error: Invalid or non-existent project directory specified." >&2 # Error to stderr
+    exit 1
+fi
+
+OUTPUT_FILE="$PROJECT_PATH/$OUTPUT_FILENAME"
+
+# --- Safety Check: Prevent overwriting the project directory itself ---
+# This is unlikely but guards against strange configurations
+if [ "$PROJECT_PATH" == "$OUTPUT_FILE" ]; then
+    echo "Error: Project directory path conflicts with output file name '$OUTPUT_FILENAME'." >&2
+    exit 1
+fi
+
+# Delete output file silently if it exists
+rm -f "$OUTPUT_FILE"
+
+# --- Build the find command ---
+# Uses arrays to construct the find command safely and avoid complex escaping issues with eval
+find_args=("$PROJECT_PATH")
+
+# Add directory prune conditions
+if [ ${#EXCLUDE_DIRS_PATTERN[@]} -gt 0 ]; then
+    find_args+=(\()
+    first_prune=true
+    for dir_pattern in "${EXCLUDE_DIRS_PATTERN[@]}"; do
+        if ! $first_prune; then
+            find_args+=(-o)
+        fi
+        find_args+=(-name "$dir_pattern" -type d)
+        first_prune=false
+    done
+    find_args+=(\) -prune -o) # Add the prune action and the OR for the next part
+fi
+
+# Add primary find conditions (type file, exclude output file, exclude patterns)
+find_args+=(\( -type f -not -path "$OUTPUT_FILE")
+if [ ${#EXCLUDE_FILES_PATTERN[@]} -gt 0 ]; then
+    for file_pattern in "${EXCLUDE_FILES_PATTERN[@]}"; do
+        find_args+=(-not -name "$file_pattern")
+    done
+fi
+find_args+=(-print \)) # Add the print action and close the group
+
+# --- Execute the find command and process results ---
+
+# Create the header in the output file
+{
+    echo "Project Context From: $PROJECT_PATH"
+    echo "Generated On: $(date)"
+    echo "==============================================="
+    echo "Ignored Directory Patterns: ${EXCLUDE_DIRS_PATTERN[*]}"
+    echo "Ignored File Patterns: ${EXCLUDE_FILES_PATTERN[*]}"
+    echo "==============================================="
+    echo ""
+} > "$OUTPUT_FILE"
+
+error_count=0
+# Use find with process substitution and sorting. Avoids eval.
+while IFS= read -r FILE_PATH; do
+    # Calculate relative path for cleaner output
+    RELATIVE_PATH="${FILE_PATH#"$PROJECT_PATH"/}"
+
+    # Append file info and content to the output file
+    {
+        # echo ""
+        # echo "// ==============================================="
+        # echo "---> FILE: $RELATIVE_PATH"
+        echo "//---> PATH: $FILE_PATH"
+        # echo "// ==============================================="
+        echo ""
+    } >> "$OUTPUT_FILE"
+
+    # Check if file is likely binary/non-text using 'file' command
+    # -b: omit filename; check for common non-text types
+    if file -b "$FILE_PATH" | grep -q -E 'binary|archive|compressed|image|font'; then
+        echo "[Non-text file (e.g., binary, data, compressed) - Contents omitted]" >> "$OUTPUT_FILE"
+    else
+        # Append text file content, redirect cat errors to stderr
+        if ! cat "$FILE_PATH" >> "$OUTPUT_FILE" 2> /dev/null; then # Hide cat errors from stdout
+             # Optionally log error to the output file itself, or just count it
+             echo "[Error reading file content for $RELATIVE_PATH]" >> "$OUTPUT_FILE"
+             ((error_count++))
+        fi
+    fi
+
+    {
+        # echo ""
+        echo "// END OF FILE: $RELATIVE_PATH"
+        echo ""
+    } >> "$OUTPUT_FILE"
+
+done < <(find "${find_args[@]}" | sort) # Execute find command using safe array expansion
+
+# Optionally report errors to stderr if any occurred
+if [ $error_count -gt 0 ]; then
+    echo "Warning: Encountered $error_count errors reading file contents during context generation." >&2
+    # Exit with a non-zero status to indicate partial success/warning
+    exit 1
+fi
+
+# Exit silently on success
+exit 0
+// END OF FILE: prompter.sh
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/static/description/icon.svg
+
+[Non-text file (e.g., binary, data, compressed) - Contents omitted]
+// END OF FILE: static/description/icon.svg
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/views/knowledge_article_views.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vue Recherche pour les Articles -->
+    <record id="knowledge_article_view_search" model="ir.ui.view">
+        <field name="name">knowledge.article.search</field>
+        <field name="model">knowledge.article</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher des Articles">
+                <!-- Champ de recherche principal -->
+                <field name="name" string="Article" filter_domain="['|', ('name', 'ilike', self), ('content', 'ilike', self)]"/>
+
+                <!-- Filtres prédéfinis -->
+                <filter string="Publiés" name="filter_published" domain="[('state', '=', 'published')]"/>
+                <filter string="Brouillons" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                
+                <separator/>
+                
+                <!-- Filtre par catégorie (permet de sélectionner une catégorie spécifique) -->
+                <field name="category_id"/>
+                <!-- Filtre par mots-clés (permet de sélectionner un ou plusieurs tags) -->
+                <field name="tag_ids"/>
+                
+                <separator/>
+
+                <!-- Options de groupement -->
+                <group expand="0" string="Group By">
+                    <filter string="Catégorie" name="group_by_category" context="{'group_by': 'category_id'}"/>
+                    <filter string="Auteur" name="group_by_author" context="{'group_by': 'author_id'}"/>
+                    <filter string="État" name="group_by_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vue Kanban pour les Articles -->
+    <record id="knowledge_article_view_kanban" model="ir.ui.view">
+        <field name="name">knowledge.article.kanban</field>
+        <field name="model">knowledge.article</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="category_id"> <!-- Groupe par catégorie par défaut -->
+                <field name="name"/>
+                <field name="author_id"/>
+                <field name="category_id"/>
+                <field name="tag_ids"/>
+                <field name="average_rating"/>
+                <field name="color" widget="color_picker"/>
+                <!-- <field name="color"/> Odoo peut utiliser un champ couleur pour les cartes -->
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click">
+                            <div class="o_kanban_record_top mb-2">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title">
+                                        <span><t t-esc="record.name.value"/></span>
+                                    </strong>
+                                </div>
+                                <field name="average_rating" widget="priority"/>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <div>
+                                    <span>Catégorie: <t t-esc="record.category_id.value"/></span>
+                                </div>
+                                <div>
+                                    <span>Auteur: <t t-esc="record.author_id.value"/></span>
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_bottom mt-2">
+                                <div class="oe_kanban_bottom_left">
+                                    <field name="tag_ids" widget="many2many_tags"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vue Liste (Tree) pour les Articles -->
+    <record id="knowledge_article_view_tree" model="ir.ui.view">
+        <field name="name">knowledge.article.tree</field>
+        <field name="model">knowledge.article</field>
+        <field name="arch" type="xml">
+            <tree string="Articles">
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="author_id"/>
+                <field name="average_rating" widget="priority"/> <!-- Widget sympa pour les étoiles -->
+                <field name="state" widget="badge" decoration-success="state == 'published'" decoration-info="state == 'draft'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Formulaire pour le Wizard de Notation -->
+    <record id="knowledge_article_rating_wizard_view_form" model="ir.ui.view">
+        <field name="name">knowledge.article.rating.wizard.form</field>
+        <field name="model">knowledge.article.rating.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Donnez votre avis">
+                <group>
+                    <field name="article_id" invisible="1"/> <!-- On garde l'ID mais on le cache -->
+                    <field name="rating" widget="priority"/> <!-- Le widget étoile est parfait ici -->
+                    <field name="feedback" placeholder="Qu'est-ce qui pourrait être amélioré ?"/>
+                </group>
+                <footer>
+                    <button name="action_submit_rating" type="object" string="Soumettre l'avis" class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue Formulaire (Form) pour les Articles -->
+    <record id="knowledge_article_view_form" model="ir.ui.view">
+        <field name="name">knowledge.article.form</field>
+        <field name="model">knowledge.article</field>
+        <field name="arch" type="xml">
+            <form string="Article">
+                <header>
+                    <button name="action_open_rating_wizard" type="object" string="✍️ Noter cet article" class="btn-secondary"/>
+                    <button name="action_publish" type="object" string="Publier" class="btn-primary" attrs="{'invisible': [('state', '=', 'published')]}"/>
+                    <button name="action_set_to_draft" type="object" string="Remettre en Brouillon" attrs="{'invisible': [('state', '=', 'draft')]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,published"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Titre de l'article..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="author_id"/>
+                            <field name="view_count"/> 
+                            <field name="category_id"/>
+                        </group>
+                        <group>
+                            <field name="tag_ids" widget="many2many_tags"/>
+                            <field name="average_rating" widget="priority"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Contenu">
+                            <field name="content"/>
+                        </page>
+                        <page string="Notes et Feedback">
+                           <field name="rating_ids" nolabel="1">
+                                <tree editable="bottom">
+                                    <field name="user_id" readonly="1"/>
+                                    <field name="rating" widget="priority"/>
+                                    <field name="feedback"/>
+                                </tree>
+                           </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <!-- Chatter -->
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action de Fenêtre pour les Articles -->
+    <record id="knowledge_article_action" model="ir.actions.act_window">
+        <field name="name">Articles</field>
+        <field name="res_model">knowledge.article</field>
+        <field name="view_mode">kanban,tree,form</field> 
+        <field name="search_view_id" ref="knowledge_article_view_search"/> 
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créez votre premier article de connaissance !
+            </p>
+        </field>
+    </record>
+
+</odoo>// END OF FILE: views/knowledge_article_views.xml
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/views/knowledge_category_views.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vue Liste (Tree) pour les Catégories -->
+    <record id="knowledge_category_view_tree" model="ir.ui.view">
+        <field name="name">knowledge.category.tree</field>
+        <field name="model">knowledge.category</field>
+        <field name="arch" type="xml">
+            <tree string="Catégories">
+                <field name="name"/>
+                <field name="parent_id"/>
+                <field name="article_count" string="Nb Articles"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Formulaire (Form) pour les Catégories -->
+    <record id="knowledge_category_view_form" model="ir.ui.view">
+        <field name="name">knowledge.category.form</field>
+        <field name="model">knowledge.category</field>
+        <field name="arch" type="xml">
+            <form string="Catégorie">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="parent_id"/>
+                        <field name="description" placeholder="Ajoutez une courte description de la catégorie..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action de Fenêtre pour les Catégories -->
+    <record id="knowledge_category_action" model="ir.actions.act_window">
+        <field name="name">Catégories</field>
+        <field name="res_model">knowledge.category</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créez votre première catégorie pour organiser vos articles.
+            </p>
+        </field>
+    </record>
+
+    <!-- Ajout de l'entrée de menu pour les Catégories dans le menu Configuration -->
+    <menuitem 
+        id="knowledge_category_menu"
+        name="Catégories"
+        parent="knowledge_config_menu"
+        action="knowledge_category_action"
+        sequence="10"/>
+
+</odoo>// END OF FILE: views/knowledge_category_views.xml
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/views/knowledge_dashboard_views.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vue Graphique (inchangée) -->
+    <record id="knowledge_article_view_graph" model="ir.ui.view">
+        <field name="name">knowledge.article.graph</field>
+        <field name="model">knowledge.article</field>
+        <field name="arch" type="xml">
+            <graph string="Analyse des Articles" type="bar">
+                <field name="category_id" type="row"/>
+                <field name="state" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Vue Pivot (inchangée) -->
+    <record id="knowledge_article_view_pivot" model="ir.ui.view">
+        <field name="name">knowledge.article.pivot</field>
+        <field name="model">knowledge.article</field>
+        <field name="arch" type="xml">
+            <pivot string="Analyse des Articles">
+                <field name="category_id" type="row"/>
+                <field name="author_id" type="col"/>
+                <field name="average_rating" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- L'action qui ouvre les vues analytiques (Version Simplifiée) -->
+    <record id="knowledge_dashboard_action" model="ir.actions.act_window">
+        <field name="name">Analyse des Articles</field>
+        <field name="res_model">knowledge.article</field>
+        <!-- On ouvre le graphique en premier, et on permet de basculer vers pivot et liste -->
+        <field name="view_mode">graph,pivot,tree</field>
+        <!-- On lie notre vue de recherche -->
+        <field name="search_view_id" ref="knowledge_article_view_search"/>
+        <!-- Contexte pour filtrer par défaut -->
+        <field name="context">{'search_default_group_by_category': 1, 'search_default_filter_published': 1}</field>
+    </record>
+
+    <!-- L'entrée de menu pour le dashboard (renommée pour plus de clarté) -->
+    <menuitem 
+        id="knowledge_dashboard_menu"
+        name="Analyse"
+        parent="knowledge_base_menu_root"
+        action="knowledge_dashboard_action"
+        sequence="50"/>
+
+</odoo>// END OF FILE: views/knowledge_dashboard_views.xml
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/views/knowledge_menus.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menu Principal (l'icône de l'application) -->
+    <menuitem 
+        id="knowledge_base_menu_root"
+        name="Base de Connaissances"
+        web_icon="knowledge_base/static/description/icon.svg" 
+        sequence="10"/>
+
+    <!-- Premier sous-menu : Articles -->
+    <menuitem
+        id="knowledge_article_menu"
+        name="Articles"
+        parent="knowledge_base_menu_root"
+        action="knowledge_article_action"
+        sequence="1"/>
+        
+    <!-- Menu de Configuration (pour gérer les catégories et tags) -->
+    <menuitem
+        id="knowledge_config_menu"
+        name="Configuration"
+        parent="knowledge_base_menu_root"
+        sequence="100"/>
+
+</odoo>// END OF FILE: views/knowledge_menus.xml
+
+//---> PATH: /home/atabong/Documents/projet/stage/dev/odoo14/custom_addons/knowledge_base/views/knowledge_tag_views.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vue Liste (Tree) pour les Tags -->
+    <record id="knowledge_tag_view_tree" model="ir.ui.view">
+        <field name="name">knowledge.tag.tree</field>
+        <field name="model">knowledge.tag</field>
+        <field name="arch" type="xml">
+            <tree string="Mots-clés" editable="bottom"> <!-- editable="bottom" permet l'édition rapide -->
+                <field name="name"/>
+                <field name="color" widget="color_picker"/> <!-- Widget pour choisir la couleur -->
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Formulaire (Form) pour les Tags -->
+    <!-- Pas besoin d'une vue formulaire complexe, la vue liste éditable suffit -->
+
+    <!-- Action de Fenêtre pour les Tags -->
+    <record id="knowledge_tag_action" model="ir.actions.act_window">
+        <field name="name">Mots-clés (Tags)</field>
+        <field name="res_model">knowledge.tag</field>
+        <field name="view_mode">tree</field> <!-- On n'affiche que la vue liste -->
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créez votre premier mot-clé pour mieux retrouver vos articles.
+            </p>
+        </field>
+    </record>
+
+    <!-- Ajout de l'entrée de menu pour les Tags dans le menu Configuration -->
+    <menuitem 
+        id="knowledge_tag_menu"
+        name="Mots-clés (Tags)"
+        parent="knowledge_config_menu"
+        action="knowledge_tag_action"
+        sequence="20"/>
+
+</odoo>// END OF FILE: views/knowledge_tag_views.xml
+

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vue Liste (Tree) pour les Tags -->
+    <record id="knowledge_tag_view_tree" model="ir.ui.view">
+        <field name="name">knowledge.tag.tree</field>
+        <field name="model">knowledge.tag</field>
+        <field name="arch" type="xml">
+            <tree string="Mots-clés" editable="bottom"> <!-- editable="bottom" permet l'édition rapide -->
+                <field name="name"/>
+                <field name="color" widget="color_picker"/> <!-- Widget pour choisir la couleur -->
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vue Formulaire (Form) pour les Tags -->
+    <!-- Pas besoin d'une vue formulaire complexe, la vue liste éditable suffit -->
+
+    <!-- Action de Fenêtre pour les Tags -->
+    <record id="knowledge_tag_action" model="ir.actions.act_window">
+        <field name="name">Mots-clés (Tags)</field>
+        <field name="res_model">knowledge.tag</field>
+        <field name="view_mode">tree</field> <!-- On n'affiche que la vue liste -->
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créez votre premier mot-clé pour mieux retrouver vos articles.
+            </p>
+        </field>
+    </record>
+
+    <!-- Ajout de l'entrée de menu pour les Tags dans le menu Configuration -->
+    <menuitem 
+        id="knowledge_tag_menu"
+        name="Mots-clés (Tags)"
+        parent="knowledge_config_menu"
+        action="knowledge_tag_action"
+        sequence="20"/>
+
+</odoo>

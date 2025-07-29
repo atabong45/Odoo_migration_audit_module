@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vues pour le modèle Rating -->
+    <record id="knowledge_article_rating_view_tree" model="ir.ui.view">
+        <field name="name">knowledge.article.rating.tree</field>
+        <field name="model">knowledge.article.rating</field>
+        <field name="arch" type="xml">
+            <tree string="Avis" editable="bottom">
+                <field name="article_id"/>
+                <field name="user_id" readonly="1"/>
+                <field name="rating" widget="priority"/>
+                <field name="feedback"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action pour la liste des notes (appelée par le smart button) -->
+    <record id="knowledge_article_rating_action" model="ir.actions.act_window">
+        <field name="name">Avis sur l'Article</field>
+        <field name="res_model">knowledge.article.rating</field>
+        <field name="view_mode">tree,form</field>
+        <!-- Filtre pour ne montrer que les avis de l'article en cours -->
+        <field name="context">{'search_default_article_id': active_id}</field>
+    </record>
+</odoo>

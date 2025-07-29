@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==========================   tree view   ========================= -->
+    <record id="patient_tree" model="ir.ui.view">
+        <field name="name">test.patient.tree</field>
+        <field name="model">test.patient</field>
+        <field name="arch" type="xml">
+            <tree string="Patient Tree" >
+                <field name="name" string="Full Name"/>
+                <field name="age"/>
+                <field name="gender"/>
+                <field name="medical_history" string="Medical History"/>
+                <field name="note" string="Notes"/>
+                <field name="state" string="Status"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ==========================   search view   ========================= -->
+    <record id="patient_search" model="ir.ui.view">
+        <field name="name">test.patient.search</field>
+        <field name="model">test.patient</field>
+        <field name="arch" type="xml">
+            <search string="Patient Search">
+                <field name="name" string="Full Name" />
+                <field name="age"/>
+                <field name="gender"/>
+                <filter string="Male" name="male" domain="[('gender', '=', 'male')]"/>
+                <group expand = "1"  string="Group by">       
+                    <filter string="Gender" name="group_by_gender" domain="[]" context="{'group_by':'gender'}"/>
+                    <filter string="Age" name="group_by_age" domain="[]" context="{'group_by':'age'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+     <!-- ==========================   tree view   ========================= -->
+    <record id="patient_form" model="ir.ui.view">
+        <field name="name">test.patient.form</field>
+        <field name="model">test.patient</field>
+        <field name="arch" type="xml">
+            <form string="Patient Form">
+                <!-- ==========================   Status Bar   ========================= -->
+                <header>
+                    <button name="action_confirm" string="Confirm" type="object" states="draft" class="btn-primary"
+                        confirm="Are you sure that you need to confirm ?"
+                    />
+                    <button name="action_treat" string="Treat" type="object" states="confirmed" class="btn-success"/>
+                    <button name="action_reset" string="Reset to Draft" type="object" states="treated,confirmed" class="btn-secondary"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,treated"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="sequence" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name" placeholder="Full Name"/>
+                            <field name="age"/>
+                            <field name="gender" invisible="context.get('hide_gender')"/>
+                            <field name="parent_id"></field>
+                            <field name="appointment_count"></field>
+                        </group>
+                        <group>
+                            <field name="medical_history" widget="text" placeholder="Medical History"/>
+                            <field name="note" widget="text" placeholder="Additional Notes"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Medical History">
+                            <field name="medical_history" widget="text"/>
+                        </page>
+                        <page string="Notes">
+                            <field name="note" widget="text"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <!-- ==========================   chatter   ========================= -->
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ==========================   kanban   ========================= -->
+    <record id="patient_kanban" model="ir.ui.view">
+        <field name="name">test.patient.kanban</field>
+        <field name="model">test.patient</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_patient">
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card">
+                            <div class="o_kanban_patient_header">
+                                <strong>
+                                    <field name="name"/>
+                                </strong>
+                            </div>
+                            <div>
+                                <span>Age: <field name="age"/></span>
+                            </div>
+                            <div>
+                                <span>Gender: <field name="gender"/></span>
+                            </div>
+                            <div>
+                                <span>Medical History:</span>
+                                <div><field name="medical_history"/></div>
+                            </div>
+                            <div>
+                                <span>Notes:</span>
+                                <div><field name="note"/></div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    
+
+    <!-- ========================   action   ================== -->
+    <record id="action_patient" model="ir.actions.act_window">
+        <field name="name">Patients</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">test.patient</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="context">{'search_default_male': 1}</field>
+        <field name="help" type="html"> 
+            <p class="patient_help_field">
+                Create a new patient record.
+            </p>
+        </field> 
+    </record>
+
+
+    <!-- ========================Top menu item================== -->
+    <menuitem id="menu_hospital_root"
+        name="Hospital"
+        sequence="10"/>
+ 
+    <menuitem id="menu_hospital_patient"
+        name="Patients"
+        parent="menu_hospital_root"
+        sequence="10"/>
+
+    <menuitem id="menu_hospital_patient_sub"
+        name="Manage Patients"
+        parent="menu_hospital_patient"
+        action="action_patient"
+        sequence="10"/>
+
+</odoo>

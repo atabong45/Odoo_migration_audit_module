@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menu Principal (l'icône de l'application) -->
+    <menuitem 
+        id="knowledge_base_menu_root"
+        name="Base de Connaissances"
+        web_icon="knowledge_base/static/description/icon.png" 
+        sequence="10"/>
+
+    <!-- Premier sous-menu : Articles -->
+    <menuitem
+        id="knowledge_article_menu"
+        name="Articles"
+        parent="knowledge_base_menu_root"
+        action="knowledge_article_action"
+        sequence="1"/>
+        
+    <!-- Menu de Configuration (pour gérer les catégories et tags) -->
+    <menuitem
+        id="knowledge_config_menu"
+        name="Configuration"
+        parent="knowledge_base_menu_root"
+        sequence="100"/>
+
+</odoo>
