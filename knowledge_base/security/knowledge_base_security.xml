@@ -11,7 +11,7 @@
             <field name="groups" eval="[(4, ref('group_knowledge_base_contributor'))]"/>
             
             <!-- On n'a pas besoin de restreindre la lecture, tout le monde peut tout lire -->
-            <field name="perm_read" eval="1"/> 
+            <field name="perm_read" eval="0"/> 
             
             <!-- Par contre, on restreint l'écriture, la création et la suppression -->
             <field name="perm_write" eval="1"/>

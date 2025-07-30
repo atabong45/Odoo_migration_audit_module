@@ -23,7 +23,7 @@
         'data/knowledge_base.xml',
         'security/ir.model.access.csv',
 
-        'security/knowledge_base_security.xml'
+        'security/knowledge_base_security.xml',
 
         'views/knowledge_category_views.xml',
         'views/knowledge_tag_views.xml',
@@ -31,7 +31,7 @@
 
         'views/knowledge_article_views.xml',
         'views/knowledge_dashboard_views.xml',
-        
+
         'views/knowledge_menus.xml',
     ],
     'installable': True,
