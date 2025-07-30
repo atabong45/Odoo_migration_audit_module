@@ -20,7 +20,6 @@
         'hr',        
     ],
     'data': [      
-        'data/knowledge_base.xml',
         'security/ir.model.access.csv',
 
         'security/knowledge_base_security.xml',
